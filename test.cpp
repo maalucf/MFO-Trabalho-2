@@ -87,33 +87,102 @@ int main() {
 
       // Próxima transição
       switch (stringToAction(action)) {
-      case Action::Init: {
-        cout << "initializing" << endl;
-        break;
-      }
-      case Action::Deposit: {
-        string depositor = nondet_picks["depositor"]["value"];
-        int amount = int_from_json(nondet_picks["amount"]["value"]);
-        cout << "TODO: chamar a função correspondente" << endl;
-        break;
-      }
-      default: {
-        cout << "TODO: fazer a conexão para as outras ações. Ação: " << action
-             << endl;
-        error = "";
-        break;
-      }
+        case Action::Init: {
+          cout << "Initializing" << endl;
+          break;
+        }
+        case Action::Deposit: {
+          string depositor = nondet_picks["depositor"]["value"];
+          int amount = int_from_json(nondet_picks["amount"]["value"]);
+          error = deposit(bank_state, depositor, amount);
+          break;
+        }
+        case Action::Withdraw: {
+          string withdrawer = nondet_picks["withdrawer"]["value"]; 
+          int amount = int_from_json(nondet_picks["amount"]["value"]); 
+          error = withdraw(bank_state, withdrawer, amount); 
+          break; 
+        }
+        case Action::Transfer: {
+          string sender = nondet_picks["sender"]["value"];
+          string receiver = nondet_picks["receiver"]["value"];
+          int amount = int_from_json(nondet_picks["amount"]["value"]);
+          error = transfer(bank_state, sender, receiver, amount);
+          break;
+        }
+        case Action::BuyInvestment: {
+          string buyer = nondet_picks["buyer"]["value"];
+          int amount = int_from_json(nondet_picks["amount"]["value"]);
+          error = buy_investment(bank_state, buyer, amount); 
+          break;
+        }
+        case Action::SellInvestment: {
+          string seller = nondet_picks["seller"]["value"];
+          int investment_id = int_from_json(nondet_picks["id"]["value"]);
+          error = sell_investment(bank_state, seller, investment_id);
+          break;
+        }
+        default: {
+          cout << "TODO: fazer a conexão para as outras ações. Ação: " << action
+              << endl;
+          error = "";
+          break;
+        }
       }
 
       BankState expected_bank_state = bank_state_from_json(state["bank_state"]);
+      if (expected_bank_state.balances != bank_state.balances) {
+        cout << "Os balanços atuais não condizem com o balanço esperado" << endl;
+        cout << "Mais especificamente: " << endl;
+        for (auto [owner, value] : expected_bank_state.balances) {
+          bool exists = bank_state.balances.count(owner) > 0; 
+          string to_print = exists ? ("é " + to_string(bank_state.balances[owner])) : ("não existe"); 
+          cout << "Balanço de " << owner << " deveria ser " << value << ", mas " << to_print << endl;
+        }
+      }
 
-      cout << "TODO: comparar o estado esperado com o estado obtido" << endl;
+      if (expected_bank_state.investments != bank_state.investments) {
+        cout << "Os investimentos atuais não condizem com os investimentos esperados" << endl;
+        cout << "Mais especificamente: " << endl;
+        for (auto [expected_investment_id, expected_investment] : expected_bank_state.investments) {
+          if (bank_state.investments.count(expected_investment_id) == 0) {
+            cout << "Investimento de ID " << expected_investment_id << " não existe" << endl;
+          }
+          else {
+            Investment investment = bank_state.investments[expected_investment_id]; 
+            cout << "Para o investimento de ID " << expected_investment_id << endl;
+            bool algo_errado = 0; 
+            if (expected_investment.owner != investment.owner) {
+              cout << "\t O dono deveria ser " << expected_investment.owner << ", mas é " << investment.owner << endl;
+              algo_errado = 1; 
+            }
+            if (expected_investment.amount != investment.amount) {
+              cout << "\t O valor deveria ser " << expected_investment.amount << ", mas é " << investment.amount << endl;
+              algo_errado = 1; 
+            }
+            if (algo_errado == 0) cout << "\t Tudo certo na verdade :)" << endl;
+          } 
+        }
+
+        for (auto [investment_id, investment] : bank_state.investments) {
+          if (expected_bank_state.investments.count(investment_id) == 0) {
+            cout << "O investimento de ID " << investment_id << " não deveria existir" << endl;
+          }
+        }
+      }
+
+      if (expected_bank_state.next_id != bank_state.next_id) {
+        cout << "O next_id não corresponde " <<  expected_bank_state.next_id << "!=" << bank_state.next_id << endl;
+      }
+      // cout << "TODO: comparar o estado esperado com o estado obtido" << endl;
 
       string expected_error = string(state["error"]["tag"]).compare("Some") == 0
                                   ? state["error"]["value"]
                                   : "";
 
-      cout << "TODO: comparar o erro esperado com o erro obtido" << endl;
+      if (expected_error != error) {
+        cout << "Erro deveria ser " << expected_error << ", mas é " << error << endl;
+      }
     }
   }
   return 0;
