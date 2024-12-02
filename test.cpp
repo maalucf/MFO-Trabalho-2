@@ -69,7 +69,8 @@ BankState bank_state_from_json(json state) {
 }
 
 int main() {
-  for (int i = 0; i < 10000; i++) {
+  //for (int i = 0; i < 10000; i++) {
+  for (int i = 0; i < 10; i++) {
     cout << "Trace #" << i << endl;
     std::ifstream f("traces/out" + to_string(i) + ".itf.json");
     json data = json::parse(f);
