@@ -69,9 +69,9 @@ BankState bank_state_from_json(json state) {
 }
 
 int main() {
+  cout << "Analysing..." << endl;
+
   for (int i = 0; i < 10000; i++) {
-  //for (int i = 0; i < 100; i++) {
-    cout << "Trace #" << i << endl;
     std::ifstream f("traces/out" + to_string(i) + ".itf.json");
     json data = json::parse(f);
 
@@ -89,7 +89,7 @@ int main() {
       // Próxima transição
       switch (stringToAction(action)) {
         case Action::Init: {
-          cout << "Initializing" << endl;
+          // cout << "Initializing" << endl;
           break;
         }
         case Action::Deposit: {
@@ -131,7 +131,21 @@ int main() {
         }
       }
 
+      string expected_error = string(state["error"]["tag"]).compare("Some") == 0
+                                  ? state["error"]["value"]
+                                  : "";
+
       BankState expected_bank_state = bank_state_from_json(state["bank_state"]);
+
+      if (
+            error != expected_error 
+            || expected_bank_state.balances != bank_state.balances 
+            || expected_bank_state.investments != bank_state.investments 
+            || expected_bank_state.next_id != bank_state.next_id
+          ) {
+        cout << "Trace #" << i << endl;
+      }
+
       if (expected_bank_state.balances != bank_state.balances) {
         cout << "Os balanços atuais não condizem com o balanço esperado" << endl;
         cout << "Mais especificamente: " << endl;
@@ -175,16 +189,13 @@ int main() {
       if (expected_bank_state.next_id != bank_state.next_id) {
         cout << "O next_id não corresponde " <<  expected_bank_state.next_id << "!=" << bank_state.next_id << endl;
       }
-      // cout << "TODO: comparar o estado esperado com o estado obtido" << endl;
-
-      string expected_error = string(state["error"]["tag"]).compare("Some") == 0
-                                  ? state["error"]["value"]
-                                  : "";
 
       if (expected_error != error) {
         cout << "Erro deveria ser " << expected_error << ", mas é " << error << endl;
       }
     }
   }
+
+  cout << "Analysis complete!" << endl;
   return 0;
 }
